@@ -1,8 +1,8 @@
--- MySQL dump 10.13  Distrib 5.7.22, for Linux (x86_64)
+-- MySQL dump 10.13  Distrib 5.7.23, for Linux (x86_64)
 --
--- Host: localhost    Database: db_project
+-- Host: localhost    Database: mysql1
 -- ------------------------------------------------------
--- Server version	5.7.22-0ubuntu18.04.1
+-- Server version	5.7.23-0ubuntu0.18.04.1
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
 /*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
@@ -23,11 +23,11 @@ DROP TABLE IF EXISTS `department`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `department` (
-  `did` int(11) NOT NULL AUTO_INCREMENT,
+  `dcode` int(11) NOT NULL,
   `dname` varchar(20) DEFAULT NULL,
   `dloc` varchar(20) DEFAULT NULL,
-  PRIMARY KEY (`did`)
-) ENGINE=InnoDB AUTO_INCREMENT=5 DEFAULT CHARSET=latin1;
+  PRIMARY KEY (`dcode`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -36,7 +36,7 @@ CREATE TABLE `department` (
 
 LOCK TABLES `department` WRITE;
 /*!40000 ALTER TABLE `department` DISABLE KEYS */;
-INSERT INTO `department` VALUES (1,'CS2','Hyd'),(2,'EEE2','Hyd'),(3,'ECE2','Pilani'),(4,'Chem2','Goa');
+INSERT INTO `department` VALUES (6594,'Tech','Gachibowli'),(6825,'Systems','Hi-tech city'),(7532,'HR','Secunderabad'),(8894,'Infrastructure','Banjara Hills'),(8899,'Managament','Gachibowli');
 /*!40000 ALTER TABLE `department` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -48,12 +48,13 @@ DROP TABLE IF EXISTS `employee`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `employee` (
-  `eid` int(11) NOT NULL AUTO_INCREMENT,
+  `ecode` int(11) NOT NULL,
   `ename` varchar(20) DEFAULT NULL,
-  `salary` int(11) DEFAULT NULL,
-  `dno` int(11) DEFAULT NULL,
-  PRIMARY KEY (`eid`)
-) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=latin1;
+  `sal` int(11) DEFAULT NULL,
+  `year_bonus` int(11) DEFAULT '0',
+  `did` int(11) DEFAULT NULL,
+  PRIMARY KEY (`ecode`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -62,7 +63,7 @@ CREATE TABLE `employee` (
 
 LOCK TABLES `employee` WRITE;
 /*!40000 ALTER TABLE `employee` DISABLE KEYS */;
-INSERT INTO `employee` VALUES (1,'2emp1',30000,1),(2,'2emp5',40000,3),(3,'2emp2',38500,1),(4,'2emp3',43000,2),(5,'2emp4',35000,4),(6,'2emp6',32000,2);
+INSERT INTO `employee` VALUES (1462,'Keval',94000,150000,6594),(1494,'Aditya',85000,165000,6594),(1499,'Abhijeet',48750,125000,7532),(1503,'Amit',35000,84000,7532),(1544,'Poojan',78500,0,8894),(1777,'Neel',92000,120000,6825),(1987,'Abhishek',62300,11500,6825),(2000,'Arvind',76000,84700,8899),(2105,'Rishabh',71000,790000,8899);
 /*!40000 ALTER TABLE `employee` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -75,4 +76,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2018-08-17 20:26:18
+-- Dump completed on 2018-09-25 17:11:32

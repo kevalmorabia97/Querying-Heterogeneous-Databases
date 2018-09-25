@@ -9,106 +9,181 @@ import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 
+import javax.swing.DefaultListSelectionModel;
 import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
-import java.awt.event.ActionListener;
-import java.awt.event.ActionEvent;
 
 public class Main {
 
-	static List<String> dbURLs = Arrays.asList(
-			"jdbc:mysql://localhost:3306/db_project",
-			"jdbc:mysql://localhost:3306/db_project2",
-			"jdbc:mysql://localhost:3306/db_project3"
-			);
 	static String dbUserName = "root";
 	static String dbPass = "mysqlpass";
 
+	/*
+	 *  key: url of database
+	 *  value: map from unified table name to actual table name
+	 */
+	static HashMap<String, HashMap<String, String>> unifiedDB = new HashMap<>();
+	static String[] unifiedTables = new String[] {"UEmployee", "UDepartment"};
+	static {
+		HashMap<String, String> mySQLDB1 = new HashMap<>();
+		mySQLDB1.put("UEmployee", "employee");
+		mySQLDB1.put("UDepartment", "department");
+		unifiedDB.put("jdbc:mysql://localhost:3306/mysql1", mySQLDB1);
+
+		HashMap<String, String> mySQLDB2 = new HashMap<>();
+		mySQLDB2.put("UEmployee", "empl");
+		mySQLDB2.put("UDepartment", "dept");
+		unifiedDB.put("jdbc:mysql://localhost:3306/mysql2", mySQLDB2);
+	}
+
 	private JFrame frame;
-	private JTextField textField;
+	private JTextField tfSelect;
+	private JList<String> listFrom;
+	private JTextField tfWhere;
+	//private JTextField tfOther;
 
-	/**
-	 * Launch the application.
-	 */
-	public static void main(String[] args) {
-		EventQueue.invokeLater(new Runnable() {
-			public void run() {
-				try {
-					Main window = new Main();
-					window.frame.setVisible(true);
-					window.frame.setTitle("Query Heterogenous Databases");
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-			}
-		});
-	}
-
-	/**
-	 * Create the application.
-	 */
+	// Initialize the contents of the frame
 	public Main() {
-		initialize();
-	}
-
-	/**
-	 * Initialize the contents of the frame.
-	 */
-	private void initialize() {
 		frame = new JFrame();
+		frame.setVisible(true);
+		frame.setTitle("Query Heterogenous Databases");
 		frame.setBounds(100, 100, 450, 300);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.getContentPane().setLayout(null);
 
-		textField = new JTextField();
-		textField.setBounds(18, 101, 414, 25);
-		frame.getContentPane().add(textField);
-		textField.setColumns(10);
+		JLabel lblSelect = new JLabel("SELECT");
+		lblSelect.setBounds(12, 35, 70, 15);
+		frame.getContentPane().add(lblSelect);
+
+		JLabel lblFrom = new JLabel("FROM");
+		lblFrom.setBounds(12, 61, 70, 15);
+		frame.getContentPane().add(lblFrom);
+
+		JLabel lblWhere = new JLabel("WHERE");
+		lblWhere.setBounds(12, 115, 70, 15);
+		frame.getContentPane().add(lblWhere);
+
+		tfSelect = new JTextField();
+		tfSelect.setColumns(10);
+		tfSelect.setBounds(82, 35, 356, 25);
+		frame.getContentPane().add(tfSelect);
+
+		listFrom = new JList<>(unifiedTables);
+		listFrom.setSelectionModel(new DefaultListSelectionModel() {
+			private static final long serialVersionUID = 1L;
+
+			// for multi select in list
+			@Override
+		    public void setSelectionInterval(int index0, int index1) {
+		        if(super.isSelectedIndex(index0)) {
+		            super.removeSelectionInterval(index0, index1);
+		        }
+		        else {
+		            super.addSelectionInterval(index0, index1);
+		        }
+		    }
+		});
+		JScrollPane listScroller = new JScrollPane(listFrom);
+		listScroller.setBounds(82, 61, 356, 50);
+		frame.getContentPane().add(listScroller);
+
+		tfWhere = new JTextField();
+		tfWhere.setColumns(10);
+		tfWhere.setBounds(82, 112, 356, 25);
+		frame.getContentPane().add(tfWhere);
+
+		/*
+		tfOther = new JTextField();
+		tfOther.setColumns(10);
+		tfOther.setBounds(82, 138, 356, 25);
+		frame.getContentPane().add(tfOther);
+		 */
 
 		JButton btnExecuteQuery = new JButton("Execute Query");
-		btnExecuteQuery.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-			}
-		});
 		btnExecuteQuery.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
-
+				
+				if(listFrom.getSelectedValuesList().size() == 0) return;
+				
 				try {
 					Class.forName("com.mysql.jdbc.Driver");
 				} catch (ClassNotFoundException e1) {
 					e1.printStackTrace();
 				}
-				
-				// get unified column names
-				Set<Object> unifiedColumnHeaders = new HashSet<>();
-				for(String dbURL : dbURLs) {
+
+				// get unified column names by executing query on each db once
+				// and save the ResultSets for later use to fill unified table 
+				HashSet<Object> unifiedColumnHeaders = new HashSet<>();
+				HashMap<String, ResultSet> queryResultSets = new HashMap<>();
+				ArrayList<Connection>  connections = new ArrayList<>(); // end all connection in the end
+				for(String dbURL : unifiedDB.keySet()) {
 					try {
 						Connection conn = DriverManager.getConnection(dbURL, dbUserName, dbPass);
+
+						ArrayList<String> selectedTables = new ArrayList<>();
+						HashSet<String> dbColumns = new HashSet<>(); // find all available cols in database
+						HashMap<String, String> db = unifiedDB.get(dbURL);
+						
+						boolean dbContainsTables = true; // false if current db doesnt contain any of the selected tables
+						for(String unifiedTableName : listFrom.getSelectedValuesList()) {
+							String actualTableName = db.get(unifiedTableName);
+							if(actualTableName == null) {
+								System.out.println(dbURL + " doesnt contain table: " + unifiedTableName);
+								dbContainsTables = false;
+							}
+							selectedTables.add(actualTableName);
+							
+							ResultSet cols = conn.getMetaData().getColumns(null, null, actualTableName, null);
+							while(cols.next()) {
+								dbColumns.add(cols.getString("COLUMN_NAME"));
+							}
+						}
+						if(!dbContainsTables)	continue;
+						
+						// discard any cols in tfSelect if the db doesnt contain that col
+						String tfSelectText = tfSelect.getText().replace(" ", "");
+						if(tfSelectText.equals(""))	tfSelectText = "*";
+						String querySelectText = "*";
+						if(!tfSelectText.equals("*")) {
+							ArrayList<String> selectedCols = new ArrayList<>();
+							for(String c : tfSelectText.split(",")) {
+								if(dbColumns.contains(c))	selectedCols.add(c);
+							}
+							querySelectText = String.join(",", selectedCols);
+						}
+						
+						String query = "SELECT " + querySelectText + " FROM " + String.join(",", selectedTables);
+						if(!tfWhere.getText().equals(""))	query += " WHERE " + tfWhere.getText();
+						
+						System.out.println(query);
+						
 						Statement stmt = conn.createStatement();
-						ResultSet rs = stmt.executeQuery(textField.getText());
+						ResultSet rs = stmt.executeQuery(query);
+						queryResultSets.put(dbURL, rs);
+						
 						ResultSetMetaData metaData = rs.getMetaData();
 						int noOfColumns = metaData.getColumnCount();
-
-						for(int i = 0; i < noOfColumns; i++) {
+						for (int i = 0; i < noOfColumns; i++) {
 							unifiedColumnHeaders.add(metaData.getColumnName(i+1));
 						}
-						conn.close();
+						
+						connections.add(conn);
 					} catch (SQLException e1) {
 						e1.printStackTrace();
 					}
 				}
 
+				// assign each column with an index of the column in unified table
 				int totalCols = unifiedColumnHeaders.size();
 				Object[] columnHeaders = new Object[totalCols];
 				HashMap<Object, Integer> colHeaderToIndex = new HashMap<>();
@@ -118,17 +193,14 @@ public class Main {
 					colHeaderToIndex.put(header, index);
 					index++;
 				}
-				
-				ArrayList<Object[]> queryResult = new ArrayList<>();
-				for(String dbURL : dbURLs) {
-					try {
-						Connection conn = DriverManager.getConnection(dbURL, dbUserName, dbPass);
 
-						Statement stmt = conn.createStatement();
-						ResultSet rs = stmt.executeQuery(textField.getText());
+				// combine results
+				ArrayList<Object[]> queryResult = new ArrayList<>();
+				for(String dbURL : unifiedDB.keySet()) {
+					try {
+						ResultSet rs = queryResultSets.get(dbURL);
 						ResultSetMetaData metaData = rs.getMetaData();
 						int noOfColumns = metaData.getColumnCount();
-
 						while (rs.next()) {
 							Object[] row = new Object[totalCols];
 							for (int i = 0; i < noOfColumns; i++) {
@@ -138,35 +210,58 @@ public class Main {
 							queryResult.add(row);
 						}
 
-						conn.close();
 					} catch(SQLException e1) {
 						e1.printStackTrace();
 					}
 				}
 
+				// close all connections
+				for(Connection conn : connections) {
+					try {
+						conn.close();
+					} catch (SQLException e1) {
+						e1.printStackTrace();
+					}
+				}
+				
+				// display result
 				JTableDisplay(queryResult.toArray(new Object[queryResult.size()][]), columnHeaders);
 			}
-
-			public void JTableDisplay(Object[][] rowData, Object[] columnName) {
-				JFrame frame = new JFrame("JTable Test Display");
-
-				JPanel panel = new JPanel();
-				panel.setLayout(new BorderLayout());
-
-				JTable table = new JTable(rowData, columnName);
-				table.setEnabled(false);
-
-				JScrollPane tableContainer = new JScrollPane(table);
-
-				panel.add(tableContainer, BorderLayout.CENTER);
-				frame.getContentPane().add(panel);
-
-				frame.pack();
-				frame.setVisible(true);
-			}
-
 		});
-		btnExecuteQuery.setBounds(146, 138, 147, 25);
+		btnExecuteQuery.setBounds(146, 233, 147, 25);
 		frame.getContentPane().add(btnExecuteQuery);
+	}
+
+	// display result table on a new window
+	public static void JTableDisplay(Object[][] rowData, Object[] columnName) {
+		JFrame resultFrame = new JFrame("Unified Data");
+
+		JPanel panel = new JPanel();
+		panel.setLayout(new BorderLayout());
+
+		JTable table = new JTable(rowData, columnName);
+		table.setEnabled(false);
+
+		JScrollPane tableContainer = new JScrollPane(table);
+
+		panel.add(tableContainer, BorderLayout.CENTER);
+		resultFrame.getContentPane().add(panel);
+
+		resultFrame.pack();
+		resultFrame.setVisible(true);
+	}
+
+	// Launch the application
+	public static void main(String[] args) {
+		//new Main();
+		EventQueue.invokeLater(new Runnable() {
+			public void run() {
+				try {
+					new Main();
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		});
 	}
 }
