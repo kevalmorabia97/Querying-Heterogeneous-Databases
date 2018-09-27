@@ -161,6 +161,10 @@ public class Main {
 							for(String c : tfSelectText.split(",")) {
 								if(dbColumns.contains(c))	selectedCols.add(c);
 							}
+							if(selectedCols.size() == 0) {
+								System.out.println(dbURL + " doesn't contain any of the provided columns");
+								continue;
+							}
 							querySelectText = String.join(",", selectedCols);
 						}
 						
