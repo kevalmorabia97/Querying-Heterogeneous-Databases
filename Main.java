@@ -32,11 +32,12 @@ public class Main {
 	 *  value: map from unified table name to actual table name
 	 */
 	static HashMap<String, HashMap<String, String>> unifiedDB = new HashMap<>();
-	static String[] unifiedTables = new String[] {"UEmployee", "UDepartment"};
+	static String[] unifiedTables = new String[] {"UEmployee", "UDepartment", "UCountry"};
 	static {
 		HashMap<String, String> mySQLDB1 = new HashMap<>();
 		mySQLDB1.put("UEmployee", "employee");
 		mySQLDB1.put("UDepartment", "department");
+		mySQLDB1.put("UCountry", "country");
 		unifiedDB.put("jdbc:mysql://localhost:3306/mysql1", mySQLDB1);
 
 		HashMap<String, String> mySQLDB2 = new HashMap<>();
@@ -138,8 +139,9 @@ public class Main {
 						for(String unifiedTableName : listFrom.getSelectedValuesList()) {
 							String actualTableName = db.get(unifiedTableName);
 							if(actualTableName == null) {
-								System.out.println(dbURL + " doesnt contain table: " + unifiedTableName);
+								System.out.println(dbURL + " doesn't contain table: " + unifiedTableName);
 								dbContainsTables = false;
+								continue;
 							}
 							selectedTables.add(actualTableName);
 							
@@ -199,6 +201,7 @@ public class Main {
 				for(String dbURL : unifiedDB.keySet()) {
 					try {
 						ResultSet rs = queryResultSets.get(dbURL);
+						if(rs == null)	continue; // current db doesnt contain selected tables
 						ResultSetMetaData metaData = rs.getMetaData();
 						int noOfColumns = metaData.getColumnCount();
 						while (rs.next()) {

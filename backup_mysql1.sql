@@ -16,6 +16,32 @@
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
+-- Table structure for table `country`
+--
+
+DROP TABLE IF EXISTS `country`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!40101 SET character_set_client = utf8 */;
+CREATE TABLE `country` (
+  `cname` varchar(50) NOT NULL,
+  `capital` varchar(50) DEFAULT NULL,
+  `population` int(11) DEFAULT NULL,
+  `continent` varchar(20) DEFAULT NULL,
+  PRIMARY KEY (`cname`)
+) ENGINE=InnoDB DEFAULT CHARSET=latin1;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `country`
+--
+
+LOCK TABLES `country` WRITE;
+/*!40000 ALTER TABLE `country` DISABLE KEYS */;
+INSERT INTO `country` VALUES ('China','Beijing',1416335215,'Asia'),('Colombia','Bogota',48301354,'South America'),('France','Paris',65292444,'Europe'),('India','New Delhi',1324171354,'Asia'),('New Zealand','Wellington',4793700,'Australia'),('South Africa','Cape Town',57553936,'Africa'),('United States','Washington, D.C.',327306620,'North America');
+/*!40000 ALTER TABLE `country` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `department`
 --
 
@@ -76,4 +102,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2018-09-25 17:11:32
+-- Dump completed on 2018-09-27 12:19:23
