@@ -31,18 +31,23 @@ public class Main {
 	 *  key: url of database
 	 *  value: map from unified table name to actual table name
 	 */
-	static HashMap<String, HashMap<String, String>> unifiedDB = new HashMap<>();
+	static HashMap<String, Database> unifiedDB = new HashMap<>();
 	static String[] unifiedTables = new String[] {"UEmployee", "UDepartment", "UCountry"};
 	static {
-		HashMap<String, String> mySQLDB1 = new HashMap<>();
-		mySQLDB1.put("UEmployee", "employee");
-		mySQLDB1.put("UDepartment", "department");
-		mySQLDB1.put("UCountry", "country");
+		// DATABASE 1		
+		Database mySQLDB1 = new Database();
+		mySQLDB1.addU2AMapping("UEmployee", "employee");
+		mySQLDB1.addTableColMapping("UEmployee", "ecode", "eid"); // ecode in UEmployee = eid in employee of mysql1
+		mySQLDB1.addTableColMapping("UEmployee", "sal", "wage");
+		mySQLDB1.addU2AMapping("UDepartment", "department");
+		mySQLDB1.addU2AMapping("UCountry", "country");
 		unifiedDB.put("jdbc:mysql://localhost:3306/mysql1", mySQLDB1);
 
-		HashMap<String, String> mySQLDB2 = new HashMap<>();
-		mySQLDB2.put("UEmployee", "empl");
-		mySQLDB2.put("UDepartment", "dept");
+		// DATABASE 2		
+		Database mySQLDB2 = new Database();
+		mySQLDB2.addU2AMapping("UEmployee", "empl");
+		mySQLDB2.addU2AMapping("UDepartment", "dept");
+		mySQLDB2.addTableColMapping("UDepartment", "dloc", "dlocation");
 		unifiedDB.put("jdbc:mysql://localhost:3306/mysql2", mySQLDB2);
 	}
 
@@ -84,14 +89,14 @@ public class Main {
 
 			// for multi select in list
 			@Override
-		    public void setSelectionInterval(int index0, int index1) {
-		        if(super.isSelectedIndex(index0)) {
-		            super.removeSelectionInterval(index0, index1);
-		        }
-		        else {
-		            super.addSelectionInterval(index0, index1);
-		        }
-		    }
+			public void setSelectionInterval(int index0, int index1) {
+				if(super.isSelectedIndex(index0)) {
+					super.removeSelectionInterval(index0, index1);
+				}
+				else {
+					super.addSelectionInterval(index0, index1);
+				}
+			}
 		});
 		JScrollPane listScroller = new JScrollPane(listFrom);
 		listScroller.setBounds(82, 61, 356, 50);
@@ -113,9 +118,9 @@ public class Main {
 		btnExecuteQuery.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
-				
+
 				if(listFrom.getSelectedValuesList().size() == 0) return;
-				
+
 				try {
 					Class.forName("com.mysql.jdbc.Driver");
 				} catch (ClassNotFoundException e1) {
@@ -132,34 +137,35 @@ public class Main {
 						Connection conn = DriverManager.getConnection(dbURL, dbUserName, dbPass);
 
 						ArrayList<String> selectedTables = new ArrayList<>();
-						HashSet<String> dbColumns = new HashSet<>(); // find all available cols in database
-						HashMap<String, String> db = unifiedDB.get(dbURL);
-						
+						HashSet<String> dbUnifiedColumns = new HashSet<>(); // all available unified cols in database
+						Database db = unifiedDB.get(dbURL);
+
 						boolean dbContainsTables = true; // false if current db doesnt contain any of the selected tables
 						for(String unifiedTableName : listFrom.getSelectedValuesList()) {
-							String actualTableName = db.get(unifiedTableName);
+							String actualTableName = db.getActualTableName(unifiedTableName);
 							if(actualTableName == null) {
 								System.out.println(dbURL + " doesn't contain table: " + unifiedTableName);
 								dbContainsTables = false;
 								continue;
 							}
 							selectedTables.add(actualTableName);
-							
+
 							ResultSet cols = conn.getMetaData().getColumns(null, null, actualTableName, null);
-							while(cols.next()) {
-								dbColumns.add(cols.getString("COLUMN_NAME"));
+							while(cols.next()) { // convert actual to unified col names
+								String actualColName = cols.getString("COLUMN_NAME"); 
+								dbUnifiedColumns.add(db.getUnifiedColName(actualColName));
 							}
 						}
 						if(!dbContainsTables)	continue;
-						
+
 						// discard any cols in tfSelect if the db doesnt contain that col
 						String tfSelectText = tfSelect.getText().replace(" ", "");
 						if(tfSelectText.equals(""))	tfSelectText = "*";
 						String querySelectText = "*";
 						if(!tfSelectText.equals("*")) {
-							ArrayList<String> selectedCols = new ArrayList<>();
+							ArrayList<String> selectedCols = new ArrayList<>(); // selected actual col names
 							for(String c : tfSelectText.split(",")) {
-								if(dbColumns.contains(c))	selectedCols.add(c);
+								if(dbUnifiedColumns.contains(c))	selectedCols.add(db.getActualColName(c));
 							}
 							if(selectedCols.size() == 0) {
 								System.out.println(dbURL + " doesn't contain any of the provided columns");
@@ -167,22 +173,32 @@ public class Main {
 							}
 							querySelectText = String.join(",", selectedCols);
 						}
-						
+
 						String query = "SELECT " + querySelectText + " FROM " + String.join(",", selectedTables);
-						if(!tfWhere.getText().equals(""))	query += " WHERE " + tfWhere.getText();
 						
+						if(!tfWhere.getText().equals("")) { // replace unified col names by actual col names
+							ArrayList<String> whereConditions = new ArrayList<>();
+							for(String condition : tfWhere.getText().replace(" ","").split(",")) {
+								String[] uCols = condition.split("=");
+								String modifiedCondition = db.getActualColName(uCols[0]) + "=" + db.getActualColName(uCols[1]);
+								whereConditions.add(modifiedCondition);
+							}
+							
+							query += " WHERE " + String.join(",", whereConditions);
+						}
+
 						System.out.println(query);
-						
+
 						Statement stmt = conn.createStatement();
 						ResultSet rs = stmt.executeQuery(query);
 						queryResultSets.put(dbURL, rs);
-						
+
 						ResultSetMetaData metaData = rs.getMetaData();
 						int noOfColumns = metaData.getColumnCount();
 						for (int i = 0; i < noOfColumns; i++) {
-							unifiedColumnHeaders.add(metaData.getColumnName(i+1));
+							unifiedColumnHeaders.add(db.getUnifiedColName(metaData.getColumnName(i+1)));
 						}
-						
+
 						connections.add(conn);
 					} catch (SQLException e1) {
 						e1.printStackTrace();
@@ -192,17 +208,18 @@ public class Main {
 				// assign each column with an index of the column in unified table
 				int totalCols = unifiedColumnHeaders.size();
 				Object[] columnHeaders = new Object[totalCols];
-				HashMap<Object, Integer> colHeaderToIndex = new HashMap<>();
+				HashMap<Object, Integer> unifiedColHeaderToIndex = new HashMap<>();
 				int index = 0;
 				for(Object header : unifiedColumnHeaders) {
 					columnHeaders[index] = header;
-					colHeaderToIndex.put(header, index);
+					unifiedColHeaderToIndex.put(header, index);
 					index++;
 				}
 
 				// combine results
 				ArrayList<Object[]> queryResult = new ArrayList<>();
 				for(String dbURL : unifiedDB.keySet()) {
+					Database db = unifiedDB.get(dbURL);
 					try {
 						ResultSet rs = queryResultSets.get(dbURL);
 						if(rs == null)	continue; // current db doesnt contain selected tables
@@ -211,7 +228,7 @@ public class Main {
 						while (rs.next()) {
 							Object[] row = new Object[totalCols];
 							for (int i = 0; i < noOfColumns; i++) {
-								int colIndex = colHeaderToIndex.get(metaData.getColumnName(i+1));
+								int colIndex = unifiedColHeaderToIndex.get(db.getUnifiedColName(metaData.getColumnName(i+1)));
 								row[colIndex] = rs.getObject(i+1);
 							}
 							queryResult.add(row);
@@ -230,7 +247,7 @@ public class Main {
 						e1.printStackTrace();
 					}
 				}
-				
+
 				// display result
 				JTableDisplay(queryResult.toArray(new Object[queryResult.size()][]), columnHeaders);
 			}

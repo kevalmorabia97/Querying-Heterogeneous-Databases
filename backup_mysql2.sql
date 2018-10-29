@@ -25,7 +25,7 @@ DROP TABLE IF EXISTS `dept`;
 CREATE TABLE `dept` (
   `dcode` int(11) NOT NULL,
   `dname` varchar(20) DEFAULT NULL,
-  `dloc` varchar(20) DEFAULT NULL,
+  `dlocation` varchar(20) DEFAULT NULL,
   `phone_no` char(10) DEFAULT NULL,
   PRIMARY KEY (`dcode`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;

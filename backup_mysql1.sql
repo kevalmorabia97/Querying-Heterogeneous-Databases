@@ -74,9 +74,9 @@ DROP TABLE IF EXISTS `employee`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!40101 SET character_set_client = utf8 */;
 CREATE TABLE `employee` (
-  `ecode` int(11) NOT NULL,
+  `eid` int(11) NOT NULL,
   `ename` varchar(20) DEFAULT NULL,
-  `sal` int(11) DEFAULT NULL,
+  `wage` int(11) DEFAULT NULL,
   `year_bonus` int(11) DEFAULT '0',
   `did` int(11) DEFAULT NULL,
   PRIMARY KEY (`ecode`)
