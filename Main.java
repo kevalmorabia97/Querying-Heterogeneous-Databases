@@ -22,20 +22,22 @@ import javax.swing.JScrollPane;
 import javax.swing.JTable;
 import javax.swing.JTextField;
 
+import relational_db.RelationalDatabase;
+
 public class Main {
 
-	static String dbUserName = "root";
-	static String dbPass = "mysqlpass";
+	static String mysqlDBUserName = "root";
+	static String mysqlDBPass = "root";
 
 	/*
 	 *  key: url of database
 	 *  value: map from unified table name to actual table name
 	 */
-	static HashMap<String, Database> unifiedDB = new HashMap<>();
+	static HashMap<String, RelationalDatabase> unifiedDB = new HashMap<>();
 	static String[] unifiedTables = new String[] {"UEmployee", "UDepartment", "UCountry"};
 	static {
 		// DATABASE 1		
-		Database mySQLDB1 = new Database();
+		RelationalDatabase mySQLDB1 = new RelationalDatabase();
 		mySQLDB1.addU2AMapping("UEmployee", "employee");
 		mySQLDB1.addTableColMapping("UEmployee", "ecode", "eid"); // ecode in UEmployee = eid in employee of mysql1
 		mySQLDB1.addTableColMapping("UEmployee", "sal", "wage");
@@ -44,7 +46,7 @@ public class Main {
 		unifiedDB.put("jdbc:mysql://localhost:3306/mysql1", mySQLDB1);
 
 		// DATABASE 2		
-		Database mySQLDB2 = new Database();
+		RelationalDatabase mySQLDB2 = new RelationalDatabase();
 		mySQLDB2.addU2AMapping("UEmployee", "empl");
 		mySQLDB2.addU2AMapping("UDepartment", "dept");
 		mySQLDB2.addTableColMapping("UDepartment", "dloc", "dlocation");
@@ -134,11 +136,11 @@ public class Main {
 				ArrayList<Connection>  connections = new ArrayList<>(); // end all connection in the end
 				for(String dbURL : unifiedDB.keySet()) {
 					try {
-						Connection conn = DriverManager.getConnection(dbURL, dbUserName, dbPass);
+						Connection conn = DriverManager.getConnection(dbURL, mysqlDBUserName, mysqlDBPass);
 
 						ArrayList<String> selectedTables = new ArrayList<>();
 						HashSet<String> dbUnifiedColumns = new HashSet<>(); // all available unified cols in database
-						Database db = unifiedDB.get(dbURL);
+						RelationalDatabase db = unifiedDB.get(dbURL);
 
 						boolean dbContainsTables = true; // false if current db doesnt contain any of the selected tables
 						for(String unifiedTableName : listFrom.getSelectedValuesList()) {
@@ -219,7 +221,7 @@ public class Main {
 				// combine results
 				ArrayList<Object[]> queryResult = new ArrayList<>();
 				for(String dbURL : unifiedDB.keySet()) {
-					Database db = unifiedDB.get(dbURL);
+					RelationalDatabase db = unifiedDB.get(dbURL);
 					try {
 						ResultSet rs = queryResultSets.get(dbURL);
 						if(rs == null)	continue; // current db doesnt contain selected tables
