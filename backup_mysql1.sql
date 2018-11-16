@@ -79,7 +79,7 @@ CREATE TABLE `employee` (
   `wage` int(11) DEFAULT NULL,
   `year_bonus` int(11) DEFAULT '0',
   `did` int(11) DEFAULT NULL,
-  PRIMARY KEY (`ecode`)
+  PRIMARY KEY (`eid`)
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
