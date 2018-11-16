@@ -1,12 +1,12 @@
-package relational_db;
+import java.util.ArrayList;
 import java.util.HashMap;
 
-public class RelationalDatabase {
+public class Database {
 	private HashMap<String, TableDescription> unified2ActualTable;
 	private HashMap<String, String> dbU2AColNames;
 	private HashMap<String, String> dbA2UColNames;
 	
-	public RelationalDatabase() {
+	public Database() {
 		unified2ActualTable = new HashMap<>();
 		dbU2AColNames = new HashMap<>();
 		dbA2UColNames = new HashMap<>();
@@ -40,5 +40,9 @@ public class RelationalDatabase {
 	
 	public String getUnifiedColName(String actualColName) {
 		return dbA2UColNames.getOrDefault(actualColName, actualColName);
+	}
+	
+	public ArrayList<String> getAllActualColNames(){
+		return new ArrayList<>(dbA2UColNames.keySet());
 	}
 }

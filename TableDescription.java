@@ -1,4 +1,4 @@
-package relational_db;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 public class TableDescription {
@@ -27,5 +27,13 @@ public class TableDescription {
 	
 	public String getA2UColName(String actualCol) {
 		return unified2ActualColMap.getOrDefault(actualCol, actualCol);
+	}
+	
+	public ArrayList<String> getAllActualColNames(){
+		return new ArrayList<String>(actual2UnifiedColMap.keySet());
+	}
+	
+	public ArrayList<String> getAllUnifiedColNames(){
+		return new ArrayList<String>(unified2ActualColMap.keySet());
 	}
 }

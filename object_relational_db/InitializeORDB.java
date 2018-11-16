@@ -6,6 +6,7 @@ import javax.persistence.Persistence;
 
 public class InitializeORDB {
 	
+	// create ordbms.odb file and initialize with objects
 	public static void main(String[] args) {
 		EntityManagerFactory emf = Persistence.createEntityManagerFactory("ordbms.odb");
 		EntityManager em = emf.createEntityManager();
@@ -13,17 +14,17 @@ public class InitializeORDB {
 		em.getTransaction().begin();
 
 		for (int i = 1; i <= 5; i++) {
-			Employee e = new Employee(i,"Employee "+i, i*12345, i*1000, i%3);
+			Employee e = new Employee(i,"Emp"+i, i*12345, i*1000, i%3+1);
 			em.persist(e);
 		}
 		
 		for (int i = 1; i <= 3; i++) {
-			Department d = new Department(i, "Department "+i, "DLoc "+i, i*3425351808l);
+			Department d = new Department(i, "Dept"+i, "DLoc"+i, i*3802l);
 			em.persist(d);
 		}
 		
 		for(int i = 1; i <= 5; i++) {
-			Country c = new Country("Country "+i, "Capital "+i, i*8452487000l, "Continent "+i);
+			Country c = new Country("Code"+i, "Country"+i, "Capital"+i, i*8452487000l, "Continent"+i);
 			em.persist(c);
 		}
 		
@@ -31,5 +32,7 @@ public class InitializeORDB {
 
 		em.close();
 		emf.close();
+		
+		System.out.println("DONE...");
 	}
 }
